@@ -13,8 +13,6 @@ const sizes = [
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-ctx.font = "48px sans-serif";
-
 let time = 0;
 let gameSpeed = 1;
 let debug = false;
@@ -306,6 +304,7 @@ function printKeys(ctx) {
                 message += key;
             }
         }
+        ctx.font = "48px sans-serif";
         ctx.fillStyle = "#bbb";
         ctx.fillText(message, 10, 50);
     }

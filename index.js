@@ -34,10 +34,22 @@ let controls = [
         "d": "right",
         " ": "shoot",
         "Spacebar": "shoot",
+    },
+    {
+        "ArrowUp": "up",
+        "ArrowDown": "down",
         "ArrowLeft": "left",
         "ArrowRight": "right",
+        "Shift": "shoot",
     },
 ];
+
+let playerColors = [
+    "green",
+    "blue",
+    "orange",
+    "red",
+]
 
 class Shape {
     constructor(position, color) {
@@ -153,7 +165,7 @@ class Circle extends Enemy {
 
 class Player extends Shape {
     constructor(position, playerNumber) {
-        super(position);
+        super(position, playerColors[playerNumber]);
         this.number = playerNumber;
         this.cooldown = 0;
         this.shooting = false;
@@ -224,6 +236,7 @@ let level1 = [
 
 let players = [
     new Player( {x: c.w / 2, y: c.h - 25}, 0 ),
+    new Player( {x: c.w / 2, y: c.h - 25}, 1 ),
 ]
 
 function checkHit(type, targetType, maxHits) {

@@ -82,6 +82,7 @@ class Harpoon extends Shape {
         this.h = 0;
         this.hits = 0;
         this.owner = owner;
+        this.popping = true;
         this.modifiers = modifiers || {};
         this.modifiers.speed = this.modifiers.speed || 12;
         this.modifiers.maxHits = this.modifiers.maxHits || 1;
@@ -231,7 +232,7 @@ class Player extends Shape {
         this.cooldown -= 1 * speed;
         if (this.cooldown <= 0 && input["shoot"] && this.shots != 0) {
             this.shots--;
-            harpoons.push(new Harpoon({x: this.x, y: this.y - 25}, this));
+            harpoons.push(new Harpoon({x: this.x, y: this.y + 25}, this));
         }
     }
 
@@ -263,7 +264,9 @@ function checkHit(type, targetType, maxHits) {
             if (!t2.intersects(b1)) {
                 continue;
             }
-            split(i, targetType);
+            if (t1.popping) {
+                split(i, targetType); 
+            }
             hits++;
             if (maxHits && hits == maxHits) {
                 return hits;
@@ -354,6 +357,10 @@ function step() {
     ctx.fillStyle = "#444";
     ctx.strokeStyle = "#888";
     ctx.fillRect(0,0,c.w,c.h);
+    
+    for (const harpoon of harpoons) {
+        harpoon.draw(ctx);
+    }
 
     for (let circle of level1) {
         circle.draw(ctx);
@@ -361,10 +368,6 @@ function step() {
 
     for (let player of players) {
         player.draw(ctx);
-    }
-
-    for (const harpoon of harpoons) {
-        harpoon.draw(ctx);
     }
 
     if (debug) {
@@ -396,26 +399,22 @@ document.addEventListener("keyup", (e) => {
 window.addEventListener("resize", resize);
 
 function resize() {
+    const pixelRatio = window.devicePixelRatio || 1;
+    
     const win = window;
     const doc = document;
     const docElem = doc.documentElement;
     const body = doc.getElementsByTagName('body')[0];
-    const x = win.innerWidth || docElem.clientWidth || body.clientWidth;
-    const y = win.innerHeight|| docElem.clientHeight|| body.clientHeight;
+    const x = (win.innerWidth || docElem.clientWidth || body.clientWidth) * pixelRatio;
+    const y = (win.innerHeight|| docElem.clientHeight|| body.clientHeight) * pixelRatio;
     let rescale = 1.25;
 
-    if (c.w > x || c.h > y) {   // Downscale
+    if (c.w * rescale > x || c.h * rescale > y) {                            // Downscale
         rescale = 1 / rescale;
         while (c.w * rescale > x || c.h * rescale > y) {
             rescale *= rescale;
         }
-    } else {                    // Upscale
-        while (c.w * rescale > x || c.h * rescale > y) {
-            rescale *= rescale;
-        }
-    }
-
-    const pixelRatio = window.devicePixelRatio || 1;
+    } 
 
     canvas.width = rescale * c.w * pixelRatio;
     canvas.height = rescale * c.h * pixelRatio;

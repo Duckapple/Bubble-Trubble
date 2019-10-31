@@ -219,8 +219,14 @@ class Player extends Shape {
         }
         if (input["left"] && !input["right"]) {
             this.x -= 5 * speed * speedMod;
+            if (this.x < 15) {
+                this.x = 15;
+            }
         } else if (input["right"] && !input["left"]) {
             this.x += 5 * speed * speedMod;
+            if (this.x > 1265) {
+                this.x = 1265;
+            }
         }
         this.cooldown -= 1 * speed;
         if (this.cooldown <= 0 && input["shoot"] && this.shots != 0) {
@@ -322,18 +328,12 @@ function printKeys(ctx) {
 
 function step() {
     if (!paused()) {
-        ctx.fillStyle = "#444";
-        ctx.strokeStyle = "#888";
-        ctx.fillRect(0,0,c.w,c.h);
-
         for (let circle of level1) {
             circle.update(gameSpeed);
-            circle.draw(ctx);
         }
 
         for (let player of players) {
             player.update(gameSpeed);
-            player.draw(ctx);
             if (checkHit([player], level1, 1)) {
                 pause = true;
             }
@@ -348,12 +348,27 @@ function step() {
                 harpoon.owner.freeShot();
                 continue;
             }
-            harpoon.draw(ctx);
         }
+    }
 
-        if (debug) {
-            printKeys(ctx);
-        }
+    ctx.fillStyle = "#444";
+    ctx.strokeStyle = "#888";
+    ctx.fillRect(0,0,c.w,c.h);
+
+    for (let circle of level1) {
+        circle.draw(ctx);
+    }
+
+    for (let player of players) {
+        player.draw(ctx);
+    }
+
+    for (const harpoon of harpoons) {
+        harpoon.draw(ctx);
+    }
+
+    if (debug) {
+        printKeys(ctx);
     }
 
     (()=>{
@@ -368,6 +383,8 @@ function step() {
     window.requestAnimationFrame(step);
 }
 
+// Non-game Logic down here (mostly)
+
 document.addEventListener("keydown", (e) => {
     currentKeys[e.key] = true;
 });
@@ -375,5 +392,43 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("keyup", (e) => {
     currentKeys[e.key] = false;
 });
+
+window.addEventListener("resize", resize);
+
+function resize() {
+    const win = window;
+    const doc = document;
+    const docElem = doc.documentElement;
+    const body = doc.getElementsByTagName('body')[0];
+    const x = win.innerWidth || docElem.clientWidth || body.clientWidth;
+    const y = win.innerHeight|| docElem.clientHeight|| body.clientHeight;
+    let rescale = 1.25;
+
+    if (c.w > x || c.h > y) {   // Downscale
+        rescale = 1 / rescale;
+        while (c.w * rescale > x || c.h * rescale > y) {
+            rescale *= rescale;
+        }
+    } else {                    // Upscale
+        while (c.w * rescale > x || c.h * rescale > y) {
+            rescale *= rescale;
+        }
+    }
+
+    const pixelRatio = window.devicePixelRatio || 1;
+
+    canvas.width = rescale * c.w * pixelRatio;
+    canvas.height = rescale * c.h * pixelRatio;
+
+    canvas.style.width = `${rescale * c.w}px`;
+    canvas.style.height = `${rescale * c.h}px`;
+
+    ctx.mozImageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = false;
+
+    ctx.scale(rescale * pixelRatio, rescale * pixelRatio);
+}
+
+resize();
 
 window.requestAnimationFrame(step);

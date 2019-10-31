@@ -42,6 +42,20 @@ let controls = [
         "ArrowRight": "right",
         "Shift": "shoot",
     },
+    {
+        "i": "up",
+        "k": "down",
+        "j": "left",
+        "l": "right",
+        "-": "shoot",
+    },
+    {
+        "8": "up",
+        "5": "down",
+        "4": "left",
+        "6": "right",
+        "+": "shoot",
+    },
 ];
 
 let playerColors = [
@@ -86,10 +100,10 @@ class Harpoon extends Shape {
 
     bounds() {
         return {
-            x1: this.x-2,
-            x2: this.x+3,
+            x1: this.x-1,
+            x2: this.x+2,
             y1: this.y - this.h - 15,
-            y2: this.y - this.h,
+            y2: this.y,
         };
     }
 
@@ -228,15 +242,10 @@ let level1 = [
     new Circle( 1, { x:400, y:500 }, 3 ),
     new Circle( 0, { x:500, y:500 }, 3 ),
     new Circle( 0, { x:500, y:500 }, 3 ),
-    new Circle( 3, { x:500, y:310 }, 3 ),
-    new Circle( 4, { x:400, y:300 }, 3 ),
-    new Circle( 5, { x:300, y:330 }, 3 ),
-    new Circle( 6, { x:200, y:350 }, 3 ),
 ]
 
 let players = [
     new Player( {x: c.w / 2, y: c.h - 25}, 0 ),
-    new Player( {x: c.w / 2, y: c.h - 25}, 1 ),
 ]
 
 function checkHit(type, targetType, maxHits) {
@@ -288,6 +297,7 @@ function printKeys(ctx) {
                 message += key;
             }
         }
+        ctx.fillStyle = "#bbb";
         ctx.fillText(message, 10, 50);
     }
 }

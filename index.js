@@ -9,13 +9,17 @@ const sizes = [
     { bs: 12, r: 70, weightMod: 0.7 },
     { bs: 9, r: 80, weightMod: 0.4 },
 ];
+let levels = [];
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 let time = 0;
 let gameSpeed = 1;
+let level = 0;
 let debug = false;
+let levelCountdown = 0;
+let joinTimer = 0;
 
 let currentKeys = {};
 
@@ -24,37 +28,43 @@ let harpoons = [];
 let pause = false;
 let pauseHeld = false;
 
-let controls = [
-    {
-        "w": "up",
-        "s": "down",
-        "a": "left",
-        "d": "right",
-        " ": "shoot",
-        "Spacebar": "shoot",
+let controls = {
+    players: [
+        {
+            "w": "up",
+            "s": "down",
+            "a": "left",
+            "d": "right",
+            " ": "shoot",
+            "spacebar": "shoot",
+        },
+        {
+            "arrowup": "up",
+            "arrowdown": "down",
+            "arrowleft": "left",
+            "arrowright": "right",
+            "shift": "shoot",
+        },
+        {
+            "i": "up",
+            "k": "down",
+            "j": "left",
+            "l": "right",
+            "-": "shoot",
+            "_": "shoot",
+        },
+        {
+            "8": "up",
+            "5": "down",
+            "4": "left",
+            "6": "right",
+            "+": "shoot",
+        },
+    ],
+    debug: {
+        "å": "",
     },
-    {
-        "ArrowUp": "up",
-        "ArrowDown": "down",
-        "ArrowLeft": "left",
-        "ArrowRight": "right",
-        "Shift": "shoot",
-    },
-    {
-        "i": "up",
-        "k": "down",
-        "j": "left",
-        "l": "right",
-        "-": "shoot",
-    },
-    {
-        "8": "up",
-        "5": "down",
-        "4": "left",
-        "6": "right",
-        "+": "shoot",
-    },
-];
+};
 
 let playerColors = [
     "green",
@@ -211,7 +221,7 @@ class Player extends Shape {
             if (!currentKeys.hasOwnProperty(key) || !currentKeys[key]) {
                 continue;
             }
-            const control = controls[this.number][key];
+            const control = controls.players[this.number][key];
             if (control) {
                 input[control] = true;
             }
@@ -240,14 +250,7 @@ class Player extends Shape {
     }
 }
 
-let level1 = [
-    new Circle( 0, { x:100, y:500 }, 3 ),
-    new Circle( 1, { x:200, y:500 }, 3 ),
-    new Circle( 2, { x:300, y:500 }, 3 ),
-    new Circle( 1, { x:400, y:500 }, 3 ),
-    new Circle( 0, { x:500, y:500 }, 3 ),
-    new Circle( 0, { x:500, y:500 }, 3 ),
-]
+let currentLevel = [];
 
 let players = [
     new Player( {x: c.w / 2, y: c.h - 25}, 0 ),
@@ -285,7 +288,7 @@ function split(index, array) {
 }
 
 function paused() {
-    if (currentKeys["Escape"] || currentKeys["p"]) {
+    if (currentKeys["escape"] || currentKeys["p"]) {
         if (!pauseHeld) {
             pause = !pause;
         }
@@ -310,7 +313,17 @@ function printKeys(ctx) {
     }
 }
 
-// level1 = []
+function positionPlayers() {
+    number = players.length;
+    for (let i = 0; i < number;) {
+        const player = players[i];
+        player.y = c.h - 25;
+        i++;
+        player.x = c.w * i / (number + 1);
+    }
+}
+
+// currentLevel = []
 
 // count = 0;
 
@@ -321,7 +334,7 @@ function printKeys(ctx) {
 //             ${Math.floor(255 - 0.1 * i)},
 //             ${Math.floor(255 - 0.1 * j)},
 //             0)`;
-//         level1.push(gen(0, { x: i, y: j }, 3, color));
+//         currentLevel.push(gen(0, { x: i, y: j }, 3, color));
 //     }
 // }
 
@@ -330,13 +343,25 @@ function printKeys(ctx) {
 
 function step() {
     if (!paused()) {
-        for (let circle of level1) {
-            circle.update(gameSpeed);
+        if (currentLevel.length == 0) {
+            if (levelCountdown > 0) {
+                levelCountdown--;
+            } else if (levelCountdown === 0) {
+                levelCountdown = -1;
+                positionPlayers();
+                currentLevel = levels[level];
+            } else if (levels.length > ++level) {
+                levelCountdown = 90;
+            }
+        }
+
+        for (let enemy of currentLevel) {
+            enemy.update(gameSpeed);
         }
 
         for (let player of players) {
             player.update(gameSpeed);
-            if (checkHit([player], level1, 1)) {
+            if (checkHit([player], currentLevel, 1)) {
                 pause = true;
             }
         }
@@ -344,7 +369,7 @@ function step() {
         for (const harpoonKey in harpoons) {
             const harpoon = harpoons[harpoonKey];
             const hitStatic = harpoon.update(gameSpeed);
-            harpoon.hits += checkHit([harpoon], level1, harpoon.modifiers.maxHits);
+            harpoon.hits += checkHit([harpoon], currentLevel, harpoon.modifiers.maxHits);
             if (harpoon.hits >= harpoon.modifiers.maxHits || !hitStatic) {
                 harpoons.splice(harpoonKey, 1);
                 harpoon.owner.freeShot();
@@ -361,8 +386,8 @@ function step() {
         harpoon.draw(ctx);
     }
 
-    for (let circle of level1) {
-        circle.draw(ctx);
+    for (let enemy of currentLevel) {
+        enemy.draw(ctx);
     }
 
     for (let player of players) {
@@ -374,10 +399,22 @@ function step() {
     }
 
     (()=>{
-        if (currentKeys["ArrowUp"] && gameSpeed < 1) {
+        if (currentKeys["pageup"] && gameSpeed < 1) {
             gameSpeed += 0.01;
-        } else if (currentKeys["ArrowDown"] && gameSpeed > 0.1) {
+        } else if (currentKeys["pagedown"] && gameSpeed > 0.1) {
             gameSpeed -= 0.01;
+        }
+    })();
+
+    (()=>{
+        if (time > joinTimer + 30) {
+            if (currentKeys["/"] && players.length > 1) {
+                players.pop();
+                joinTimer = time;
+            } else if (currentKeys["*"] && players.length < 4) {
+                players.push(new Player({x:c.w/2, y: c.h - 25}, players.length));
+                joinTimer = time;
+            }
         }
     })();
 
@@ -388,11 +425,15 @@ function step() {
 // Non-game Logic down here (mostly)
 
 document.addEventListener("keydown", (e) => {
-    currentKeys[e.key] = true;
+    e.preventDefault();
+    currentKeys[e.key.toLowerCase()] = true;
+    return false;
 });
 
 document.addEventListener("keyup", (e) => {
-    currentKeys[e.key] = false;
+    e.preventDefault();
+    currentKeys[e.key.toLowerCase()] = false;
+    return false;
 });
 
 window.addEventListener("resize", resize);
@@ -429,4 +470,4 @@ function resize() {
 
 resize();
 
-window.requestAnimationFrame(step);
+window.addEventListener("load", () => window.requestAnimationFrame(step));
